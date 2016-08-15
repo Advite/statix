@@ -22,7 +22,7 @@ defmodule Mix.Tasks.Statix.New do
   	File.write!(Path.join(locales_path, "en.json"), "{\"greeting\": \"Hello Statix!\"}")
   	templates_path = Path.join(project_name, "templates")
   	File.mkdir(templates_path)
-  	File.write!(Path.join(templates_path, "index.mustache"), "{{greeting}}")
+  	File.write!(Path.join(templates_path, "index.mustache"), "{{i18n.greeting}}")
   end
   def run(_), do:
   	IO.puts("Usage:\n\t$ mix statix.new project_name")
