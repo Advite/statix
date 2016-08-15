@@ -20,11 +20,12 @@ defmodule Statix.Mixfile do
     [{:mustachex, "~> 0.0.1"},
      {:dir_walker, "~> 0.0.6"},
      {:poison, "~> 2.0"},
-     { :inflex, "~> 1.7.0" }]
+     {:inflex, "~> 1.7.0"},
+     {:ex_doc, ">= 0.0.0", only: :dev}]
   end
 
   defp package do
-    [contributors: ["Dejan Strbac"],
+    [maintainers: ["Dejan Strbac"],
      licenses: ["MIT License"],
      links: %{"GitHub" => "https://github.com/Advite/statix"},
      files: ~w(mix.exs README.md lib)]

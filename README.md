@@ -28,7 +28,6 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 
 Statix expects the following simple directory structure:
 
-    ```bash
     data/
       files.json
       as_you_want.json
@@ -40,17 +39,11 @@ Statix expects the following simple directory structure:
       index.mustache
       some_sub_dir/
         more.mustache
-    ```
 
 You can generate a new structure using the built-in mix task, where the project name is the name of the resulting directory.
 
-
-    ```bash
     $ mix statix.new project_name
-    ```
 
 Use the built-in mix task to compile the input directory:
 
-    ```bash
     $ mix statix.compile source_directory output_directory
-    ```
