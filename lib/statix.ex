@@ -15,7 +15,7 @@ defmodule Statix do
 	@default_output_dir "static"
 	@data_dir "data"
 	@assets_dir "assets"
-	@templates_file_extension "mustache"
+	@templates_file_extension "mustache.html"
 	@data_file_extension "json"
 
 	def init(path, options \\ []) do
@@ -184,5 +184,6 @@ defmodule Statix do
   	File.mkdir(templates_path)
   	File.write!(Path.join(templates_path, "index.#{@templates_file_extension}"), "{{i18n.greeting}} {{hello.name}}!")
 	end
+
 
 end
