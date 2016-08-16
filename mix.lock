@@ -1,4 +1,4 @@
-%{"dir_walker": {:hex, :dir_walker, "0.0.6", "d068e4306bce63d7475e38efabd0e27429153ce10546774b7789a9a9fa40154d", [:mix], []},
+%{"dir_walker": {:git, "https://github.com/dejanstrbac/dir_walker.git", "0c869acacf688585d705f66ab3d934cf920ec263", []},
   "earmark": {:hex, :earmark, "1.0.1", "2c2cd903bfdc3de3f189bd9a8d4569a075b88a8981ded9a0d95672f6e2b63141", [:mix], []},
   "ex_doc": {:hex, :ex_doc, "0.13.0", "aa2f8fe4c6136a2f7cfc0a7e06805f82530e91df00e2bff4b4362002b43ada65", [:mix], [{:earmark, "~> 1.0", [hex: :earmark, optional: false]}]},
   "inflex": {:hex, :inflex, "1.7.0", "4466a34b7d8e871d8164619ba0f3b8410ec782e900f0ae1d3d27a5875a29532e", [:mix], []},
