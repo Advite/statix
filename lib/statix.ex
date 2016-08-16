@@ -30,6 +30,7 @@ defmodule Statix do
 			data: load_data(path),
 			partials: load_partials(path),
 			default_locale: Keyword.get(options, :default_locale, first_locale) }
+			|> clean!
 	end
 
 	def compile!(path \\ ".", options \\ []), do:
@@ -41,6 +42,7 @@ defmodule Statix do
 	def clean!(builder) do
 		File.rm_rf!(builder.destination_path)
 		false = File.exists?(builder.destination_path)
+		builder
 	end
 
 	def ensure_path!(path) do
