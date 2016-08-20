@@ -8,11 +8,10 @@ defmodule StatixTest do
   end
 
   test "clean build path" do
-  	builder = Statix.init("test/example_site", destination_path: "test/static")
-  	File.mkdir_p!(builder.destination_path)
-  	assert File.exists?(builder.destination_path)
+  	builder = Statix.compile!("test/example_site", destination_path: "test/static")
+  	assert File.ls!(builder.destination_path) |> Enum.empty? |> Kernel.not
   	Statix.clean!(builder)
-  	assert !File.exists?(builder.destination_path)
+  	assert File.ls!(builder.destination_path) |> Enum.empty?
   end
 
   test "ensure path exists" do

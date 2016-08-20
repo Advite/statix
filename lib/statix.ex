@@ -40,8 +40,8 @@ defmodule Statix do
 		Map.keys(data) |> Enum.sort
 
 	def clean!(builder) do
-		File.rm_rf!(builder.destination_path)
-		false = File.exists?(builder.destination_path)
+		File.ls!(builder.destination_path)
+			|> Enum.each(fn f -> Path.join(builder.destination_path, f) |> File.rm_rf! end)
 		builder
 	end
 
