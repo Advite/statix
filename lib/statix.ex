@@ -60,7 +60,10 @@ defmodule Statix do
 	end
 
 	def compile_template!(builder, path, locale) when is_atom(locale) do
-		render_data = Map.merge(%{ i18n: builder.locales_data[locale] }, builder.data)
+		render_data = Map.merge(%{
+			i18n: builder.locales_data[locale],
+			locale: locale
+		}, builder.data)
 		output_content = Mustachex.render_file(path, render_data, partials: builder.partials)
 		templates_prefix_path = templates_path(builder.source_path)
 		unless String.starts_with?(path, templates_prefix_path), do: throw("Bad path #{path}")
