@@ -2,12 +2,13 @@ defmodule Statix do
 	require Logger
 
 	defstruct available_locales: [],
-						default_locale: nil,
-						locales_data: nil,
-						partials: nil,
-						source_path: nil,
-						destination_path: nil,
-						data: nil
+						default_locale: 	 nil,
+						locales_data:      nil,
+						locales_html:      nil,
+						partials:          nil,
+						source_path:       nil,
+						destination_path:  nil,
+						data:              nil
 
 	@max_locales 99
 	@templates_dir "templates"
@@ -17,19 +18,22 @@ defmodule Statix do
 	@assets_dir "assets"
 	@templates_file_extension "mustache.html"
 	@data_file_extension "json"
+	@html_file_extension "html"
 
 	def init(path, options \\ []) do
 		locales_data = load_locales_data(path)
+		locales_html = load_locales_html(path)
 		[first_locale|_]=locales = available_locales(locales_data)
 		path = ensure_path!(path)
 		%Statix{
 			available_locales: locales,
-			source_path: path,
-			destination_path: Keyword.get(options, :destination_path, @default_output_dir),
-			locales_data: locales_data,
-			data: load_data(path),
-			partials: load_partials(path),
-			default_locale: Keyword.get(options, :default_locale, first_locale) }
+			source_path: 			 path,
+			destination_path:  Keyword.get(options, :destination_path, @default_output_dir),
+			locales_data: 		 locales_data,
+			locales_html:      locales_html,
+			data:              load_data(path),
+			partials:          load_partials(path),
+			default_locale:    Keyword.get(options, :default_locale, first_locale) }
 			|> clean!
 	end
 
@@ -62,6 +66,7 @@ defmodule Statix do
 	def compile_template!(builder, path, locale) when is_atom(locale) do
 		render_data = Map.merge(%{
 			i18n: builder.locales_data[locale],
+			html: builder.locales_html[locale],
 			locale: locale
 		}, builder.data)
 		output_content = Mustachex.render_file(path, render_data, partials: builder.partials)
@@ -125,7 +130,7 @@ defmodule Statix do
 				Logger.debug "No data files found in #{from_data_path}"
 				%{}
 		  [path] ->
-		  	[data_file_base_name] = Path.basename(path) |> String.split(".json", trim: true)
+		  	[data_file_base_name] = Path.basename(path) |> String.split(".#{@data_file_extension}", trim: true)
 		  	file_data = load_data_file(path)
 		  	data_path_scope = Path.relative_to(path, from_data_path) |> Path.dirname
 		  	data_path_scope = if String.starts_with?(data_path_scope, "."), do:
@@ -141,6 +146,32 @@ defmodule Statix do
 
 	defp load_data_file(path), do:
 		File.read!(path) |> Poison.Parser.parse!
+
+	defp load_locales_html(base_path) do
+		{:ok, walker} = DirWalker.start_link(locales_path(base_path), include_dir_names: false, matching: ~r/^(.*\.#{@html_file_extension})$/)
+		walk_html_files(locales_path(base_path), walker, %{})
+	end
+
+	defp walk_html_files(from_data_path, walker, data) do
+		case DirWalker.next(walker) do
+			nil -> data
+			[]  ->
+				Logger.debug "No html files found in #{from_data_path}"
+				%{}
+		  [path] ->
+		  	[data_file_base_name] = Path.basename(path) |> String.split(".#{@html_file_extension}", trim: true)
+		  	base_name_local_parts = String.split(data_file_base_name, ".", trim: true)
+		  	base_name_locale = List.last(base_name_local_parts) |> String.to_atom
+		  	base_name = Enum.slice(base_name_local_parts, 0, Enum.count(base_name_local_parts)-1)
+		  		|> Enum.join(".")
+		  		|> Inflex.camelize(:lower)
+		  		|> String.to_atom
+		  	file_data = File.read!(path)
+		  	new_data = Map.merge(data, %{ base_name_locale => %{ base_name => file_data }}, fn _k, v1, v2 -> Map.merge(v1, v2) end)
+		  	walk_html_files(from_data_path, walker, new_data)
+		end
+	end
+
 
 	defp load_partials(base_path) do
 		{:ok, walker} = DirWalker.start_link(templates_path(base_path), matching: ~r/^\_(.*\.#{@templates_file_extension})$/)
