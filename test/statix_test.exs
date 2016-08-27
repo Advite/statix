@@ -44,7 +44,7 @@ defmodule StatixTest do
   test "compile directory templates to output build" do
   	_builder = Statix.compile!("test/example_site", destination_path: "test/static")
   	assert File.exists?("test/static/de/index.html")
-  	assert File.exists?("test/static/de/faq.html")
+  	assert !File.exists?("test/static/de/faq.html")
   	assert File.exists?("test/static/de/partial_test.html")
   	assert File.exists?("test/static/en/index.html")
   	assert File.exists?("test/static/en/faq.html")

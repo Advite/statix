@@ -77,13 +77,24 @@ defmodule Statix do
 		destination_path = Path.join(Path.join(builder.destination_path, to_string(locale)), output_file_path)
 		template_filename = Path.basename(output_file_path)
 		[template_base_filename] = String.split(template_filename, ".#{@templates_file_extension}", trim: true)
-		template_html_filename = "#{template_base_filename}.html"
-		output_filename_path = Path.join(Path.dirname(destination_path), template_html_filename)
 
-		ensure_path!(Path.dirname(output_filename_path))
-		Logger.debug "#{path} [#{locale}] => #{output_filename_path}"
-		File.write!(output_filename_path, output_content)
-		{:ok, output_filename_path, output_content}
+		# Does the path have locale in it? If it does, than do it just if
+		# the given locale matches it.
+		parts = String.split(template_base_filename, ".")
+		possible_locale = List.last(parts) |> String.downcase |> String.to_atom
+		is_possible_locale = Enum.member?(builder.available_locales, possible_locale)
+		is_single_locale_content = is_possible_locale and (possible_locale == locale)
+		if is_single_locale_content or not is_possible_locale do
+			template_html_filename = if is_single_locale_content, do:
+				"#{Enum.slice(parts, 0, Enum.count(parts) - 1) }.html", else: "#{template_base_filename}.html"
+			output_filename_path = Path.join(Path.dirname(destination_path), template_html_filename)
+			ensure_path!(Path.dirname(output_filename_path))
+			Logger.debug "#{path} [#{locale}] => #{output_filename_path}"
+			File.write!(output_filename_path, output_content)
+			{:ok, output_filename_path, output_content}
+		else
+			Logger.debug "Skipping #{path} [#{locale}]"
+		end
 	end
 
 	def compile_templates!(builder) do
