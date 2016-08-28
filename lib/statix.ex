@@ -19,6 +19,7 @@ defmodule Statix do
 	@templates_file_extension "mustache.html"
 	@data_file_extension "json"
 	@html_file_extension "html"
+	@extra_html_data "+++"
 
 	def init(path, options \\ []) do
 		locales_data = load_locales_data(path)
@@ -177,8 +178,13 @@ defmodule Statix do
 		  		|> Enum.join(".")
 		  		|> Inflex.camelize(:lower)
 		  		|> String.to_atom
-		  	file_data = File.read!(path)
-		  	new_data = Map.merge(data, %{ base_name_locale => %{ base_name => file_data }}, fn _k, v1, v2 -> Map.merge(v1, v2) end)
+		  	file_data = File.read!(path) |> String.trim
+		  	{html_data, html_text} = case String.split(file_data, @extra_html_data, trim: true) do
+	  			[data, html] -> {Poison.Parser.parse!(data), String.trim(html)}
+	  			_ -> {%{}, file_data}
+		  	end
+		  	html_data = Map.merge(html_data, %{ body: html_text })
+		  	new_data = Map.merge(data, %{ base_name_locale => %{ base_name => html_data }}, fn _k, v1, v2 -> Map.merge(v1, v2) end)
 		  	walk_html_files(from_data_path, walker, new_data)
 		end
 	end
