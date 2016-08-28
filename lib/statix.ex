@@ -66,15 +66,15 @@ defmodule Statix do
 
 	def compile_template!(builder, path, locale) when is_binary(locale) do
 		render_data = Map.merge(%{
-			i18n: builder.locales_data[locale],
-			html: builder.locales_html[locale],
-			locale: locale
+			"i18n" => builder.locales_data[locale],
+			"html" => builder.locales_html[locale],
+			"locale" => locale
 		}, builder.data)
 
 		template = File.read!(path)
   	{render_data, template} = case String.split(template, @extra_data_separator, trim: true) do
 			[data, template] ->
-				new_render_data = Map.merge(render_data, Poison.Parser.parse!(data))
+				new_render_data = Map.merge(render_data, %{ "extra" => Poison.Parser.parse!(data) })
 				{new_render_data, String.trim(template)}
 			_ -> {render_data, template}
   	end
@@ -190,7 +190,7 @@ defmodule Statix do
 	  			[data, html] -> {Poison.Parser.parse!(data), String.trim(html)}
 	  			_ -> {%{}, file_data}
 		  	end
-		  	html_data = Map.merge(html_data, %{ body: html_text })
+		  	html_data = Map.merge(html_data, %{ "body" => html_text })
 		  	new_data = Map.merge(data, %{ base_name_locale => %{ base_name => html_data }}, fn _k, v1, v2 -> Map.merge(v1, v2) end)
 		  	walk_html_files(from_data_path, walker, new_data)
 		end
