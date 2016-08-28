@@ -17,8 +17,8 @@ defmodule Statix.Mixfile do
   end
 
   defp deps do
-    [{:mustachex, "~> 0.0.1"},
-     {:dir_walker, github: "dejanstrbac/dir_walker"},
+    [{:mustachex, github: "jui/mustachex" },
+     {:dir_walker, github: "dejanstrbac/dir_walker" },
      {:poison, "~> 2.0"},
      {:inflex, "~> 1.7.0"},
      {:ex_doc, ">= 0.0.0", only: :dev}]
