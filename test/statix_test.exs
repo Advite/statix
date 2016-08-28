@@ -27,9 +27,9 @@ defmodule StatixTest do
   	builder = Statix.init("test/example_site", destination_path: "test/static")
   	:ok = Statix.compile_template!(builder, "test/example_site/templates/index.mustache.html")
   	assert File.exists?("test/static/de/index.html")
-  	"Deutsch\nTest Product 1\nHoi!\nKlar!" = File.read!("test/static/de/index.html") |> String.trim
+  	"Deutsch\nTest Product 1\nHoi!\nKlar!\nthing" = File.read!("test/static/de/index.html") |> String.trim
   	assert File.exists?("test/static/en/index.html")
-  	"English\nTest Product 1\nHi!\nTest Extra Title" = File.read!("test/static/en/index.html") |> String.trim
+  	"English\nTest Product 1\nHi!\nTest Extra Title\nthing" = File.read!("test/static/en/index.html") |> String.trim
   end
 
   test "compile template with partial" do

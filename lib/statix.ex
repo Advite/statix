@@ -19,7 +19,7 @@ defmodule Statix do
 	@templates_file_extension "mustache.html"
 	@data_file_extension "json"
 	@html_file_extension "html"
-	@extra_html_data "+++"
+	@extra_data_separator "+++"
 
 	def init(path, options \\ []) do
 		locales_data = load_locales_data(path)
@@ -70,7 +70,14 @@ defmodule Statix do
 			html: builder.locales_html[locale],
 			locale: locale
 		}, builder.data)
-		output_content = Mustachex.render_file(path, render_data, partials: builder.partials)
+
+		template = File.read!(path)
+  	{render_data, template} = case String.split(template, @extra_data_separator, trim: true) do
+			[data, template] -> {Map.merge(render_data, Poison.Parser.parse!(data)), String.trim(template)}
+			_ -> {render_data, template}
+  	end
+
+		output_content = Mustachex.render(template, render_data, partials: builder.partials)
 		templates_prefix_path = templates_path(builder.source_path)
 		unless String.starts_with?(path, templates_prefix_path), do: throw("Bad path #{path}")
 
@@ -179,7 +186,7 @@ defmodule Statix do
 		  		|> Inflex.camelize(:lower)
 		  		|> String.to_atom
 		  	file_data = File.read!(path) |> String.trim
-		  	{html_data, html_text} = case String.split(file_data, @extra_html_data, trim: true) do
+		  	{html_data, html_text} = case String.split(file_data, @extra_data_separator, trim: true) do
 	  			[data, html] -> {Poison.Parser.parse!(data), String.trim(html)}
 	  			_ -> {%{}, file_data}
 		  	end
