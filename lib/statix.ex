@@ -64,7 +64,7 @@ defmodule Statix do
 		compile_template!(builder, path, locales)
 	end
 
-	def compile_template!(builder, path, locale) when is_atom(locale) do
+	def compile_template!(builder, path, locale) when is_binary(locale) do
 		render_data = Map.merge(%{
 			i18n: builder.locales_data[locale],
 			html: builder.locales_html[locale],
@@ -73,7 +73,9 @@ defmodule Statix do
 
 		template = File.read!(path)
   	{render_data, template} = case String.split(template, @extra_data_separator, trim: true) do
-			[data, template] -> {Map.merge(render_data, Poison.Parser.parse!(data)), String.trim(template)}
+			[data, template] ->
+				new_render_data = Map.merge(render_data, Poison.Parser.parse!(data))
+				{new_render_data, String.trim(template)}
 			_ -> {render_data, template}
   	end
 
@@ -89,7 +91,7 @@ defmodule Statix do
 		# Does the path have locale in it? If it does, than do it just if
 		# the given locale matches it.
 		parts = String.split(template_base_filename, ".")
-		possible_locale = List.last(parts) |> String.downcase |> String.to_atom
+		possible_locale = List.last(parts) |> String.downcase
 		is_possible_locale = Enum.member?(builder.available_locales, possible_locale)
 		is_single_locale_content = is_possible_locale and (possible_locale == locale)
 		if is_single_locale_content or not is_possible_locale do
@@ -157,7 +159,6 @@ defmodule Statix do
 		  	data_scope = (Path.split(data_path_scope) ++ [data_file_base_name])
 		  		|> Enum.map(&Inflex.camelize(&1, :lower))
 		  		|> Enum.join(".")
-		  		|> String.to_atom
 		  	new_data = Map.merge(data, %{ data_scope => file_data })
 		  	walk_data_files(from_data_path, walker, new_data)
 		end
@@ -180,11 +181,10 @@ defmodule Statix do
 		  [path] ->
 		  	[data_file_base_name] = Path.basename(path) |> String.split(".#{@html_file_extension}", trim: true)
 		  	base_name_local_parts = String.split(data_file_base_name, ".", trim: true)
-		  	base_name_locale = List.last(base_name_local_parts) |> String.to_atom
+		  	base_name_locale = List.last(base_name_local_parts)
 		  	base_name = Enum.slice(base_name_local_parts, 0, Enum.count(base_name_local_parts)-1)
 		  		|> Enum.join(".")
 		  		|> Inflex.camelize(:lower)
-		  		|> String.to_atom
 		  	file_data = File.read!(path) |> String.trim
 		  	{html_data, html_text} = case String.split(file_data, @extra_data_separator, trim: true) do
 	  			[data, html] -> {Poison.Parser.parse!(data), String.trim(html)}

@@ -4,7 +4,7 @@ defmodule StatixTest do
 
   test "fetch available locales" do
   	builder = Statix.init("test/example_site", destination_path: "test/static")
-  	assert [:de, :en] == builder.available_locales
+  	assert ["de", "en"] == builder.available_locales
   end
 
   test "clean build path" do
