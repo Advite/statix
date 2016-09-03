@@ -70,7 +70,8 @@ defmodule Statix do
 			"locale" => locale })
 
 		# Render the html templates with the data already present, but
-		# will ignore other html data.
+		# will ignore other html data. This should be cached per locale to
+		# speed up. TODO
 		render_data = Map.merge(render_data, %{
 			"html" => Enum.map(builder.locales_html[locale], fn (k) ->
 				{name, %{"body" => body}=v} = k
