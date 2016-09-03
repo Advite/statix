@@ -29,7 +29,7 @@ defmodule StatixTest do
   	assert File.exists?("test/static/de/index.html")
   	"Deutsch\nTest Product 1\nHoi!\nKlar!\nthing" = File.read!("test/static/de/index.html") |> String.trim
   	assert File.exists?("test/static/en/index.html")
-  	"English\nTest Product 1\nHi!\nTest Extra Title\nthing" = File.read!("test/static/en/index.html") |> String.trim
+  	"English\nTest Product 1\nHi in en/English!\nTest Extra Title\nthing" = File.read!("test/static/en/index.html") |> String.trim
   end
 
   test "compile template with partial" do

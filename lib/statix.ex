@@ -65,11 +65,20 @@ defmodule Statix do
 	end
 
 	def compile_template!(builder, path, locale) when is_binary(locale) do
-		render_data = Map.merge(%{
+		render_data = Map.merge(builder.data, %{
 			"i18n" => builder.locales_data[locale],
-			"html" => builder.locales_html[locale],
-			"locale" => locale
-		}, builder.data)
+			"locale" => locale })
+
+		# Render the html templates with the data already present, but
+		# will ignore other html data.
+		render_data = Map.merge(render_data, %{
+			"html" => Enum.map(builder.locales_html[locale], fn (k) ->
+				{name, %{"body" => body}=v} = k
+				rendered_body = Mustachex.render(body, render_data, partials: builder.partials)
+				v = Map.put(v, "body", rendered_body)
+				{name, v}
+				end) |> Enum.into(%{})
+		})
 
 		template = File.read!(path)
   	{render_data, template} = case String.split(template, @extra_data_separator, trim: true) do
