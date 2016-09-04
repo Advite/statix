@@ -108,9 +108,13 @@ defmodule Statix do
 			template_html_filename = if is_single_locale_content, do:
 				"#{Enum.slice(parts, 0, Enum.count(parts) - 1) }.html", else: "#{template_base_filename}.html"
 			output_filename_path = Path.join(Path.dirname(destination_path), template_html_filename)
+			gz_output_filename_path = Path.join(Path.dirname(destination_path), template_html_filename) <> ".gzip"
 			ensure_path!(Path.dirname(output_filename_path))
 			Logger.debug "#{path} [#{locale}] => #{output_filename_path}"
 			File.write!(output_filename_path, output_content)
+			Logger.debug "#{path} [#{locale}] => #{gz_output_filename_path}"
+			File.write!(gz_output_filename_path, output_content, [:compressed])
+
 			{:ok, output_filename_path, output_content}
 		else
 			Logger.debug "Skipping #{path} [#{locale}]"
