@@ -8,7 +8,8 @@ defmodule Statix do
 						partials:          nil,
 						source_path:       nil,
 						destination_path:  nil,
-						data:              nil
+						data:              nil,
+						cache:             %{}
 
 	@max_locales 99
 	@templates_dir "templates"
@@ -57,38 +58,55 @@ defmodule Statix do
 
 	def compile_template!(builder, path), do:
 		compile_template!(builder, path, builder.available_locales)
-	def compile_template!(_builder, _path, []), do: :ok
+	def compile_template!(builder, _path, []), do: builder
 
-	def compile_template!(builder, path, [locale|locales]) do
+	def compile_template!(builder, path, [locale|locales]), do:
 		compile_template!(builder, path, locale)
-		compile_template!(builder, path, locales)
-	end
+			|> compile_template!(path, locales)
 
 	def compile_template!(builder, path, locale) when is_binary(locale) do
+		Logger.debug "Compiling template: [#{path}] / [#{locale}]"
+		Logger.debug "- merging builder data with locales/translations"
 		render_data = Map.merge(builder.data, %{
 			"i18n" => builder.locales_data[locale],
 			"locale" => locale })
 
 		# Render the html templates with the data already present, but
-		# will ignore other html data. This should be cached per locale to
-		# speed up. TODO
+		# will ignore other html data.
+		Logger.debug "- merging builder data with locales/html"
+		builder = case Map.has_key?(builder.cache, locale) do
+			false ->
+				Logger.debug "- rendering html locales"
+				val = Enum.map(builder.locales_html[locale], fn (k) ->
+						{name, %{"body" => body}=v} = k
+						rendered_body = Mustachex.render(body, render_data, partials: builder.partials)
+						v = Map.put(v, "body", rendered_body)
+						{name, v}
+						end)
+				cache = Map.put(builder.cache, locale, val)
+				%{ builder | cache: cache }
+			true ->
+				Logger.debug "- using cached html locales value"
+				builder
+		end
+
 		render_data = Map.merge(render_data, %{
-			"html" => Enum.map(builder.locales_html[locale], fn (k) ->
-				{name, %{"body" => body}=v} = k
-				rendered_body = Mustachex.render(body, render_data, partials: builder.partials)
-				v = Map.put(v, "body", rendered_body)
-				{name, v}
-				end) |> Enum.into(%{})
+			"html" => builder.cache[locale] |> Enum.into(%{})
 		})
 
+		Logger.debug "- reading the mustache template"
 		template = File.read!(path)
+
+		Logger.debug "- extracting the extra data from the template"
   	{render_data, template} = case String.split(template, @extra_data_separator, trim: true) do
 			[data, template] ->
+				Logger.debug "- merging the extra data"
 				new_render_data = Map.merge(render_data, %{ "extra" => Poison.Parser.parse!(data) })
 				{new_render_data, String.trim(template)}
 			_ -> {render_data, template}
   	end
 
+  	Logger.debug "- rendering with mustache the template and data"
 		output_content = Mustachex.render(template, render_data, partials: builder.partials)
 		templates_prefix_path = templates_path(builder.source_path)
 		unless String.starts_with?(path, templates_prefix_path), do: throw("Bad path #{path}")
@@ -110,15 +128,15 @@ defmodule Statix do
 			output_filename_path = Path.join(Path.dirname(destination_path), template_html_filename)
 			gz_output_filename_path = Path.join(Path.dirname(destination_path), template_html_filename) <> ".gzip"
 			ensure_path!(Path.dirname(output_filename_path))
-			Logger.debug "#{path} [#{locale}] => #{output_filename_path}"
+			Logger.debug "writting #{path} [#{locale}] => #{output_filename_path}"
 			File.write!(output_filename_path, output_content)
-			Logger.debug "#{path} [#{locale}] => #{gz_output_filename_path}"
+			Logger.debug "writting compressed #{path} [#{locale}] => #{gz_output_filename_path}"
 			File.write!(gz_output_filename_path, output_content, [:compressed])
-
-			{:ok, output_filename_path, output_content}
+			# {:ok, builder, output_filename_path, output_content}
 		else
 			Logger.debug "Skipping #{path} [#{locale}]"
 		end
+		builder
 	end
 
 	def compile_templates!(builder) do
@@ -129,10 +147,11 @@ defmodule Statix do
 
 	defp walk_templates(builder, walker) do
 		case DirWalker.next(walker) do
-			nil -> :ok
+			nil -> builder
 			[path] ->
-				compile_template!(builder, path)
-				walk_templates(builder, walker)
+				updated_builder = compile_template!(builder, path)
+				walk_templates(updated_builder, walker)
+				updated_builder
 		end
 	end
 
@@ -154,8 +173,11 @@ defmodule Statix do
 	end
 
 	defp load_locales_data(base_path) do
+		Logger.debug "Loading locales (translations)..."
 		{:ok, walker} = DirWalker.start_link(locales_path(base_path), include_dir_names: false, matching: ~r/^(.*\.#{@data_file_extension})$/)
-		walk_data_files(locales_path(base_path), walker, %{})
+		r = walk_data_files(locales_path(base_path), walker, %{})
+		Logger.debug "DONE [loading locales]"
+		r
 	end
 
 	defp walk_data_files(from_data_path, walker, data) do
@@ -182,8 +204,11 @@ defmodule Statix do
 		File.read!(path) |> Poison.Parser.parse!
 
 	defp load_locales_html(base_path) do
+		Logger.debug "Loading locales/html..."
 		{:ok, walker} = DirWalker.start_link(locales_path(base_path), include_dir_names: false, matching: ~r/^(.*\.#{@html_file_extension})$/)
-		walk_html_files(locales_path(base_path), walker, %{})
+		r = walk_html_files(locales_path(base_path), walker, %{})
+		Logger.debug "DONE [loading locales/html]"
+		r
 	end
 
 	defp walk_html_files(from_data_path, walker, data) do
@@ -212,8 +237,11 @@ defmodule Statix do
 
 
 	defp load_partials(base_path) do
+		Logger.debug "Loading partials..."
 		{:ok, walker} = DirWalker.start_link(templates_path(base_path), matching: ~r/^\_(.*\.#{@templates_file_extension})$/)
-		walk_partials_files(walker)
+		r = walk_partials_files(walker)
+		Logger.debug "DONE [loading partials]"
+		r
 	end
 
 	defp walk_partials_files(walker, data \\ %{}) do
@@ -235,9 +263,11 @@ defmodule Statix do
 	end
 
 	defp copy_assets!(builder) do
+		Logger.debug "Copying assets..."
 		assets_dir = assets_path(builder.source_path)
 		if File.exists?(assets_dir), do:
 			{:ok, _} = File.cp_r(assets_dir, builder.destination_path)
+		Logger.debug "DONE [copying assets]"
 		builder
 	end
 
