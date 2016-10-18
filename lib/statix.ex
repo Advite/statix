@@ -102,7 +102,7 @@ defmodule Statix do
 			[data, template] ->
 				Logger.debug "- merging the extra data"
 				new_render_data = Map.merge(render_data, %{ "extra" => Poison.Parser.parse!(data) })
-				{new_render_data, String.trim(template)}
+				{new_render_data, String.strip(template)}
 			_ -> {render_data, template}
   	end
 
@@ -224,9 +224,9 @@ defmodule Statix do
 		  	base_name = Enum.slice(base_name_local_parts, 0, Enum.count(base_name_local_parts)-1)
 		  		|> Enum.join(".")
 		  		|> Inflex.camelize(:lower)
-		  	file_data = File.read!(path) |> String.trim
+		  	file_data = File.read!(path) |> String.strip
 		  	{html_data, html_text} = case String.split(file_data, @extra_data_separator, trim: true) do
-	  			[data, html] -> {Poison.Parser.parse!(data), String.trim(html)}
+	  			[data, html] -> {Poison.Parser.parse!(data), String.strip(html)}
 	  			_ -> {%{}, file_data}
 		  	end
 		  	html_data = Map.merge(html_data, %{ "body" => html_text })
